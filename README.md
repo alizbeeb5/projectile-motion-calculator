@@ -58,8 +58,6 @@ projectile-motion-calculator/
 ├── app.py              # Main Flask application
 ├── templates/
 │   └── index.html      # HTML template for the web page
-├── static/
-│   └── style.css       # CSS file for styling (optional, if you have one)
 └── README.md           # This readme file
 ```
 
