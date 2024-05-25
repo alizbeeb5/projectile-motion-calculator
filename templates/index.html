@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projectile Motion Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            
+        }
+        .sidebar {
+            background-color: #333;
+            color: #fff;
+            width: 20%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            background-color: #f0f0f0;
+            width: 80%;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        h1 {
+            text-align: center;
+
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .results h2 {
+            color: #333;
+        }
+        #plot {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>Projectile Motion Calculator</h1>
+        <form action="/" method="post">
+            <label for="initial_velocity">Initial Velocity (m/s):</label>
+            <input type="number" id="initial_velocity" name="initial_velocity" required><br><br>
+            
+            <label for="angle">Launch Angle (degrees):</label>
+            <input type="number" id="angle" name="angle" required><br><br>
+
+            <button type="submit">Calculate</button>
+        </form>
+    </div>
+    <div class="main-content">
+        {% if results %}
+        <div class="results">
+            <h2>Results</h2>
+            <p>Time of flight: {{ results.time_of_flight }} seconds</p>
+            <p>Horizontal range: {{ results.horizontal_range }} meters</p>
+            <p>Maximum height: {{ results.max_height }} meters</p>
+            <div id="plot"></div>
+            <script>
+                var x = {{ results.trajectory[0] | tojson }};
+                var y = {{ results.trajectory[1] | tojson }};
+                var u = {{ results.velocity_x | tojson }};
+                var v = {{ results.velocity_y | tojson }};
+
+                var frames = [];
+                for (var i = 0; i < x.length; i++) {
+                    frames.push({
+                        data: [{ x: x.slice(0, i + 1), y: y.slice(0, i + 1) }]
+                    });
+                }
+
+                var trace1 = {
+                    x: x,
+                    y: y,
+                    mode: 'lines',
+                    name: 'Trajectory'
+                };
+
+                var trace2 = {
+                    x: x,
+                    y: y,
+                    mode: 'markers',
+                    marker: {
+                        size: 10,
+                        color: 'rgba(0, 0, 255, 0.5)'
+                    },
+                    line: {
+                        color: 'rgba(0, 0, 255, 0.5)'
+                    },
+                    text: u.map((_, i) => `(${u[i].toFixed(2)}, ${v[i].toFixed(2)})`),
+                    hoverinfo: 'text'
+                };
+
+                var vectors = [];
+                for (var i = 0; i < x.length; i += 10) { // Plot velocity vectors every 10 steps
+                    vectors.push({
+                        type: 'scatter',
+                        x: [x[i], x[i] + u[i] * 0.1], // Scale down the velocity for better visualization
+                        y: [y[i], y[i] + v[i] * 0.1],
+                        mode: 'lines+markers',
+                        marker: { size: 1 },
+                        line: { width: 2, color: 'red' }
+                    });
+                }
+
+                var layout = {
+                    title: 'Projectile Motion Trajectory',
+                    xaxis: { title: 'Horizontal Distance (m)' },
+                    yaxis: { title: 'Vertical Distance (m)' },
+                    showlegend: false,
+                    updatemenus: [{
+                        type: 'buttons',
+                        showactive: false,
+                        buttons: [{
+                            label: 'Play',
+                            method: 'animate',
+                            args: [null, {
+                                fromcurrent: true,
+                                frame: { redraw: true, duration: 100 },
+                                transition: { duration: 0 }
+                            }]
+                        }]
+                    }]
+                };
+
+                var data = [trace1, trace2, ...vectors];
+
+                Plotly.newPlot('plot', data, layout).then(function() {
+                    Plotly.addFrames('plot', frames);
+                });
+            </script>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
